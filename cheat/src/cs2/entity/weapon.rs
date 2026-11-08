@@ -12,10 +12,6 @@ impl WeaponEntity {
         Self { entity }
     }
 
-    pub fn address(&self) -> usize {
-        self.entity
-    }
-
     pub fn vdata(&self, cs2: &CS2) -> Option<WeaponVData> {
         let address: usize = cs2
             .process

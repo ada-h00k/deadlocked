@@ -19,7 +19,6 @@ mod entity;
 mod hud;
 pub mod model;
 mod models;
-mod nade_prediction;
 mod opengl;
 mod player;
 
@@ -80,7 +79,6 @@ impl AppState {
             }
         }
 
-        self.draw_nade_prediction(&painter, data);
         self.draw_bomb_timer(&painter, data);
         self.draw_fov_circle(&painter, data);
         self.draw_sniper_crosshair(&painter, data);
