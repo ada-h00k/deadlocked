@@ -9,6 +9,7 @@ use super::text::OverlayTextConfig;
 pub struct HudConfig {
     pub bomb: BombConfig,
     pub hitmarker: HitmarkerConfig,
+    pub quake_sounds: QuakeSoundsConfig,
     pub fov_circle: bool,
     pub sniper_crosshair: CrosshairConfig,
     pub dropped_weapons: bool,
@@ -28,6 +29,7 @@ impl Default for HudConfig {
         Self {
             bomb: BombConfig::default(),
             hitmarker: HitmarkerConfig::default(),
+            quake_sounds: QuakeSoundsConfig::default(),
             fov_circle: false,
             sniper_crosshair: CrosshairConfig::default(),
             dropped_weapons: true,
@@ -40,6 +42,28 @@ impl Default for HudConfig {
             debug: false,
             bvh_debug: BvhDebugConfig::default(),
             overlay_text: OverlayTextConfig::default(),
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct QuakeSoundsConfig {
+    pub enabled: bool,
+    pub volume: f32,
+    /// maximum time between kills for a multi kill chain, in seconds
+    pub multi_kill_window: f32,
+    /// minimum time between two plays of the same sound, in seconds
+    pub cooldown: f32,
+}
+
+impl Default for QuakeSoundsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            volume: 1.0,
+            multi_kill_window: 3.0,
+            cooldown: 5.0,
         }
     }
 }

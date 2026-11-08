@@ -108,6 +108,19 @@ cargo run --release --bin deadlocked
 - Triggerbot
 - RCS
 
+### Quake Sounds
+
+- All 12 announcer sounds are built in, works out of the box
+- First Blood, Headshot, Humiliation (knife kills)
+- Multi Kills (Double Kill, Triple Kill, Multi Kill, Monster Kill)
+- Kill Sprees (Killing Spree, Rampage, Dominating, Unstoppable, Godlike)
+- Headshot is the lowest priority announcement, it only plays when no other
+  event fired for the same kills
+- Cooldown per sound keeps streaks from stacking the same announcement
+- Own sound files are optional and override the built in ones
+- Sequential playback queue, own kills only
+- Read-only memory access, nothing is written to or injected into the game
+
 ## Web Radar
 
 - Web radar
@@ -134,6 +147,56 @@ cargo run --release --bin deadlocked
 <br>
 
 ## FAQ
+
+<details>
+<summary>How do I set up Quake Sounds?</summary>
+
+Just toggle **Enable Quake Sounds** in the Hitmarker tab. All 12 announcer
+sounds are built into the binary, no setup required.
+
+If you want to replace individual sounds, drop files with the same name into
+`~/.config/deadlocked/sounds` (or `$XDG_CONFIG_HOME/deadlocked/sounds`). The
+folder (with a template `README.txt`) is created on first start and is rescanned
+automatically every few seconds. Events without a matching file keep their
+built in sound.
+
+Each event plays the first matching file, any of `wav`, `mp3`, `ogg` or `flac` works:
+
+| File name | Event |
+| --- | --- |
+| `firstblood.*` | first own kill of a round (also on your first kill after joining) |
+| `headshot.*` | kill by headshot, only when no other event fired for these kills |
+| `humiliation.*` | kill with the knife |
+| `doublekill.*` | 2 kills within the multi kill window |
+| `triplekill.*` | 3 kills within the multi kill window |
+| `multikill.*` | 4 kills within the multi kill window |
+| `monsterkill.*` | 5+ kills within the multi kill window |
+| `killingspree.*` | 3 kills without dying |
+| `rampage.*` | 5 kills without dying |
+| `dominating.*` | 7 kills without dying |
+| `unstoppable.*` | 9 kills without dying |
+| `godlike.*` | 11 kills without dying |
+
+First Blood, Multi Kills, Kill Sprees and Humiliation take priority over the
+Headshot announcement: a headshot that happens alongside them stays silent, so
+fast streaks tell your ramp up instead of stacking headshot sounds. On top of
+that each sound has a cooldown and plays at most once per `cooldown` seconds.
+
+The multi kill window, the cooldown and the volume can be changed in the
+`[hud.quake_sounds]` section of your config:
+
+```toml
+[hud.quake_sounds]
+enabled = false
+volume = 1.0
+multi_kill_window = 3.0
+cooldown = 5.0
+```
+
+Triggered sounds are played one after another (queue). Dying or a new round
+resets sprees and multi kill chains.
+
+</details>
 
 <details>
 <summary>Where are my configs saved?</summary>

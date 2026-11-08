@@ -1,11 +1,15 @@
 use std::io::Cursor;
 
-use rodio::{Decoder, DeviceSinkBuilder, MixerDeviceSink, Source};
+use rodio::{Decoder, DeviceSinkBuilder, MixerDeviceSink, Player, Source};
 
 use crate::config::hud::HitmarkerSound;
 
+/// maximum number of quake sounds waiting in the playback queue
+const MAX_QUEUED_SOUNDS: usize = 4;
+
 pub struct Audio {
     sink: MixerDeviceSink,
+    quake_player: Player,
 }
 
 impl Audio {
@@ -15,7 +19,8 @@ impl Audio {
             std::process::exit(1);
         });
         sink.log_on_drop(false);
-        Self { sink }
+        let quake_player = Player::connect_new(sink.mixer());
+        Self { sink, quake_player }
     }
 
     pub fn play(&self, bytes: &[u8], volume: f32) {
@@ -26,6 +31,30 @@ impl Audio {
         self.sink
             .mixer()
             .add(source.amplify(volume.clamp(0.0, 10.0)));
+    }
+
+    /// append a quake sound to the sequential playback queue
+    pub fn queue(&self, bytes: &[u8], volume: f32) {
+        if self.quake_player.len() >= MAX_QUEUED_SOUNDS {
+            return;
+        }
+        let Ok(source) = Decoder::try_from(Cursor::new(bytes.to_vec())) else {
+            utils::warn!("failed to decode quake sound");
+            return;
+        };
+        // clear() pauses the player, revive it so appended sounds stay audible
+        self.quake_player.play();
+        self.quake_player
+            .append(source.amplify(volume.clamp(0.0, 10.0)));
+    }
+
+    pub fn clear_queue(&self) {
+        if self.quake_player.len() > 0 {
+            self.quake_player.clear();
+            // clear() pauses the player, undo that right away so the next
+            // queued sound does not end up on a paused player
+            self.quake_player.play();
+        }
     }
 
     pub fn validate(bytes: Vec<u8>) -> Result<(), String> {
@@ -47,5 +76,24 @@ pub fn builtin_sound(sound: HitmarkerSound) -> &'static [u8] {
         HitmarkerSound::WaterDrip => include_bytes!("../assets/audio/water_drip.wav"),
         HitmarkerSound::Wood => include_bytes!("../assets/audio/wood.mp3"),
         HitmarkerSound::Custom => include_bytes!("../assets/audio/water_drip.wav"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rodio::Player;
+
+    /// rodio's `clear()` pauses the player and `append()` does not resume it,
+    /// the quake queue relies on `play()` being called around both operations
+    #[test]
+    fn clear_pauses_player() {
+        let player = Player::new().0;
+        assert!(!player.is_paused());
+
+        player.clear();
+        assert!(player.is_paused());
+
+        player.play();
+        assert!(!player.is_paused());
     }
 }
